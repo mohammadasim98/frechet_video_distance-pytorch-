@@ -5,7 +5,7 @@ from tqdm import tqdm
 import torch
 from torch.nn.functional import interpolate
 
-from pytorch_i3d_model.pytorch_i3d import InceptionI3d
+from .pytorch_i3d_model.pytorch_i3d import InceptionI3d
 
 
 def preprocess(videos, target_resolution):
