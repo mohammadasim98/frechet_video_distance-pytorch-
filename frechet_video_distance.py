@@ -11,7 +11,9 @@ from .pytorch_i3d_model.pytorch_i3d import InceptionI3d
 def preprocess(videos, target_resolution):
     reshaped_videos = videos.permute(0, 4, 1, 2, 3)
     size = [reshaped_videos.size()[2]] + list(target_resolution)
+    print("Resizing videos to:", size)
     resized_videos = interpolate(reshaped_videos, size=size, mode='trilinear', align_corners=False)
+    print("Resized videos shape:", resized_videos.shape)
     scaled_videos = 2 * resized_videos / 255. - 1
     return scaled_videos
 
@@ -42,7 +44,7 @@ def calculate_fvd_from_activations(first_activations, second_activations, eps=1e
 def batch_generator(data, batch_size):
     n = data.size()[0]
     indices = np.random.permutation(n)
-
+    print(f"Total samples: {n}, Batch size: {batch_size}")
     for i in tqdm(range(0, n, batch_size)):
         batch_indices = indices[i:i+batch_size]
         yield data[batch_indices]
@@ -50,13 +52,14 @@ def batch_generator(data, batch_size):
 
 def get_activations(data, model, batch_size=10):
     activations = []
+    print("Calculating activations...")
     for batch in batch_generator(data, batch_size):
-        activations.append(model(batch).squeeze().detach().numpy())
+        activations.append(model(batch).squeeze().detach().cpu().float().numpy())
     return np.vstack(activations)
 
 
-def frechet_video_distance(first_set_of_videos, second_set_of_videos, path_to_model_weights):
-    i3d = InceptionI3d(400, in_channels=3)
+def frechet_video_distance(first_set_of_videos, second_set_of_videos, path_to_model_weights, device='cpu', dtype=torch.float32):
+    i3d = InceptionI3d(400, in_channels=3).to(torch.device(device)).to(dtype)
     i3d.load_state_dict(torch.load(path_to_model_weights))
     i3d.train(False)
 
